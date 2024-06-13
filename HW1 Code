@@ -1,0 +1,168 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Upload Data Set
+data_set = 'HW1.csv'
+data = pd.read_csv(data_set)
+
+# Displaying some of the Data Set
+print(data.head())
+print(data.columns)
+
+# Gradient Descent
+def gradient_descent(x, y, learn_rate=0.01, num_iterations=1000):
+    num_samples = len(y)
+    theta0 = 0
+    theta1 = 0
+    history_cost = []
+
+    for i in range(num_iterations):
+        # Prediction
+        y_pred = theta0 + theta1 * x
+
+        # Cost
+        cost = (1/(2*num_samples)) * np.sum((y_pred - y) ** 2)
+        history_cost.append(cost)
+
+        # Gradient
+        d_theta0 = (1/num_samples) * np.sum(y_pred - y)
+        d_theta1 = (1/num_samples) * np.sum((y_pred - y) * x)
+
+        # Update Parameters
+        theta0 -= learn_rate * d_theta0
+        theta1 -= learn_rate * d_theta1
+
+    return theta0, theta1, history_cost
+
+# Plot function
+def plot_function(x, y, theta0, theta1, history_cost, variable_name):
+    plt.figure(figsize=(12, 5))
+
+    # Plot regression
+    plt.subplot(1, 2, 1)
+    plt.grid(True)
+    plt.scatter(x, y, color='blue', label='Data Points')
+    plt.plot(x, theta0 + theta1 * x, color='red', label='Fitted line')
+    plt.title(f'Regression Line for {variable_name}')
+    plt.xlabel(variable_name)
+    plt.ylabel('Y')
+    plt.legend()
+    plt.grid(True)
+
+    # Plot Cost
+    plt.subplot(1, 2, 2)
+    plt.grid(True)
+    plt.plot(range(len(history_cost)), history_cost, color='green')
+    plt.title(f'Loss over Iterations for {variable_name}')
+    plt.xlabel('Iterations')
+    plt.ylabel('Loss')
+    plt.yscale('log')
+
+    plt.tight_layout()
+    plt.show()
+
+# Parameters for the model
+learning_rates = [0.01, 0.05, 0.1]
+iterations = 1000
+
+# Gradient Descent for X1
+results_X1 = []
+for lr in learning_rates:
+    theta0, theta1, history_cost = gradient_descent(data['X1'], data['Y'], learn_rate=lr, num_iterations=iterations)
+    results_X1.append((theta0, theta1, history_cost, lr))
+    plot_function(data['X1'], data['Y'], theta0, theta1, history_cost, 'X1')
+
+# Gradient Descent for X2
+results_X2 = []
+for lr in learning_rates:
+    theta0, theta1, cost_history = gradient_descent(data['X2'], data['Y'], learn_rate=lr, num_iterations=iterations)
+    results_X2.append((theta0, theta1, cost_history, lr))
+    plot_function(data['X2'], data['Y'], theta0, theta1, cost_history, 'X2')
+
+# Gradient Descent for X3
+results_X3 = []
+for lr in learning_rates:
+    theta0, theta1, cost_history = gradient_descent(data['X3'], data['Y'], learn_rate=lr, num_iterations=iterations)
+    results_X3.append((theta0, theta1, cost_history, lr))
+    plot_function(data['X3'], data['Y'], theta0, theta1, cost_history, 'X3')
+
+# Minimal Loss
+min_loss_X1 = min(results_X1[1][2])
+min_loss_X2 = min(results_X2[1][2])
+min_loss_X3 = min(results_X3[1][2])
+
+print(f"Min loss for X1: {min_loss_X1}")
+print(f"Min loss for X2: {min_loss_X2}")
+print(f"Min loss for X3: {min_loss_X3}")
+
+
+# Problem 2
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Upload dataset
+data = pd.read_csv('HW1.csv', header=None)
+
+# Converting Data to numeric
+data = data.apply(pd.to_numeric, errors='coerce')
+data = data.fillna(data.mean())
+
+# Gradient Descent for Multiple Variables
+def multi_gradient_descent(X, y, learn_rate=0.01, num_iterations=1000):
+    num_samples, n = X.shape
+    theta = np.zeros(n+1)
+    history_cost = []
+
+    for i in range(num_iterations):
+        # Predictions 
+        y_pred = np.dot(X, theta[1:]) + theta[0]
+
+        # Cost
+        cost = (1/(2*num_samples)) * np.sum((y_pred - y) ** 2)
+        history_cost.append(cost)
+
+        # Gradient
+        d_theta = np.zeros(n+1)
+        d_theta[0] = np.sum(y_pred - y) / num_samples
+
+        for j in range(1, n+1):
+            d_theta[j] = np.dot((y_pred - y), X[:, j-1]) / num_samples
+
+        # Update Parameters
+        theta -= learn_rate * d_theta
+
+    return theta, history_cost
+
+# Prepare Data
+x_multi = data.iloc[:, :-1].values
+y_multi = data.iloc[:, -1].values
+
+# Gradient Descent for different variables
+results_multi = []
+for lr in learning_rates:
+    theta, history_cost = multi_gradient_descent(x_multi, y_multi, learn_rate=lr, num_iterations=iterations)
+    results_multi.append((theta, history_cost, lr))
+
+    # Plotting Loss over Iterations
+    plt.figure(figsize=(6, 4))
+    plt.grid(True)
+    plt.plot(history_cost, label=f'LR-{lr}', color='blue')
+    plt.title(f'Loss over Iteration={lr}')
+    plt.xlabel('Iterations')
+    plt.ylabel('Loss')
+    plt.yscale('log')
+    plt.legend()
+    plt.show()
+
+# Best Model from Results
+best_theta = results_multi[1][0]
+
+# New Points
+new_data = np.array([[1, 1, 1,], [2, 0, 4], [3, 2, 1]])
+
+# Predict Y for new points
+pred = np.dot(new_data, best_theta[1:]) + best_theta[0]
+pred
+
