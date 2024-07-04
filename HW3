@@ -1,0 +1,326 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import confusion_matrix, classification_report
+
+dataset = 'cancer.csv'
+data = pd.read_csv(dataset)
+
+data = data.drop(columns='id')
+data['diagnosis'] = data['diagnosis'].map({'B': 0, 'M': 1})
+
+features = data.drop(columns='diagnosis').values
+target = data['diagnosis'].values
+
+imputer = SimpleImputer(strategy='mean')
+features = imputer.fit_transform(features)
+
+scaler = StandardScaler()
+features = scaler.fit_transform(features)
+
+features_train, features_test, target_train, target_test = train_test_split(features, target, train_size=0.8, test_size=0.2, random_state=0)
+
+model = GaussianNB()
+model.fit(features_train, target_train)
+
+target_pred = model.predict(features_test)
+
+conf_matrix = confusion_matrix(target_test, target_pred)
+
+print(classification_report(target_test, target_pred))
+print(conf_matrix)
+
+fig, ax = plt.subplots()
+cax = ax.matshow(conf_matrix, cmap='RdPu')
+
+plt.colorbar(cax)
+ax.set_xticklabels([''] + ["Benign", "Malignant"])
+ax.set_yticklabels([''] + ["Benign", "Malignant"])
+plt.xlabel('Predicted')
+plt.ylabel('Actual Result')
+
+for i in range(conf_matrix.shape[0]):
+    for j in range(conf_matrix.shape[1]):
+        ax.text(j, i, conf_matrix[i, j], va='center', ha='center')
+
+plt.title('Cancer Confusion Matrix')
+plt.show()
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, precision_score, recall_score, f1_score
+
+dataset = 'cancer.csv'
+data = pd.read_csv(dataset)
+
+print(data.head())
+
+if 'id' in data.columns:
+    data = data.drop(columns='id')
+
+data['diagnosis'] = data['diagnosis'].map({'B': 0, 'M': 1})
+
+features = data.drop(columns='diagnosis').values
+target = data['diagnosis'].values
+
+imputer = SimpleImputer(strategy='mean')
+features = imputer.fit_transform(features)
+
+scaler = StandardScaler()
+features = scaler.fit_transform(features)
+
+features_train, features_test, target_train, target_test = train_test_split(features, target, train_size=0.8, test_size=0.2, random_state=0)
+
+model = LogisticRegression(random_state=0)
+model.fit(features_train, target_train)
+
+target_pred = model.predict(features_test)
+
+conf_matrix = confusion_matrix(target_test, target_pred)
+
+print(classification_report(target_test, target_pred))
+print(conf_matrix)
+
+fig, ax = plt.subplots()
+cax = ax.matshow(conf_matrix, cmap='RdPu')
+
+plt.colorbar(cax)
+
+ax.set_xticklabels([''] + ["Benign", "Malignant"])
+ax.set_yticklabels([''] + ["Benign", "Malignant"])
+
+plt.xlabel('Predicted')
+plt.ylabel('Actual Result')
+
+for i in range(conf_matrix.shape[0]):
+    for j in range(conf_matrix.shape[1]):
+        ax.text(j, i, conf_matrix[i, j], va='center', ha='center')
+
+plt.title('Cancer Confusion Matrix')
+plt.show()
+
+C_values = [10, 5, 1, 0.1, 0.001]
+
+for c in C_values:
+    clf = LogisticRegression(penalty='l1', C=c, solver='liblinear')
+    clf.fit(features_train, target_train)
+    print('C:', c)
+    print('Training accuracy: %5.4f' % clf.score(features_train, target_train))
+    print('Test accuracy: %5.4f' % clf.score(features_test, target_test))
+    print('')
+
+clf = LogisticRegression(penalty='l1', C=0.1, solver='liblinear')
+clf.fit(features_train, target_train)
+
+pred_with_params = clf.predict(features_test)
+
+param_conf_matrix = confusion_matrix(target_test, pred_with_params)
+
+print("Model Accuracy: %5.4f")
+print("Model Precision: %5.4f")
+print("Model Recall: %5.4f")
+print("Model F1 Score: %5.4f")
+
+fig, ax = plt.subplots()
+cax = ax.matshow(param_conf_matrix, cmap='RdPu')
+
+plt.colorbar(cax)
+
+ax.set_xticklabels([''] + ["Benign", "Malignant"])
+ax.set_yticklabels([''] + ["Benign", "Malignant"])
+
+plt.xlabel('Predicted')
+plt.ylabel('Actual Result')
+
+for i in range(param_conf_matrix.shape[0]):
+    for j in range(param_conf_matrix.shape[1]):
+        ax.text(j, i, param_conf_matrix[i, j], va='center', ha='center')
+
+plt.title('Cancer Confusion Matrix with Parameters Penalty')
+plt.show()
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import confusion_matrix, classification_report
+
+dataset = 'cancer.csv'
+data = pd.read_csv(dataset)
+
+print(data.head())
+
+if 'id' in data.columns:
+    data = data.drop(columns='id')
+
+if 'Unnamed: 32' in data.columns:
+    data = data.drop(columns='Unnamed: 32')
+
+data['diagnosis'] = data['diagnosis'].map({'B': 0, 'M': 1})
+
+features = data.drop(columns='diagnosis')
+target = data['diagnosis']
+
+imputer = SimpleImputer(strategy='mean')
+features = imputer.fit_transform(features)
+
+scaler = StandardScaler()
+features = scaler.fit_transform(features)
+
+features_train, features_test, target_train, target_test = train_test_split(features, target, train_size=0.8, test_size=0.2, random_state=0)
+
+model = GaussianNB()
+model.fit(features_train, target_train)
+
+target_pred = model.predict(features_test)
+
+conf_matrix = confusion_matrix(target_test, target_pred)
+
+print(classification_report(target_test, target_pred))
+print(conf_matrix)
+
+fig, ax = plt.subplots()
+cax = ax.matshow(conf_matrix, cmap='RdPu')
+
+plt.colorbar(cax)
+
+ax.set_xticks([0, 1])
+ax.set_yticks([0, 1])
+ax.set_xticklabels(["Benign", "Malignant"])
+ax.set_yticklabels(["Benign", "Malignant"])
+
+plt.xlabel('Predicted Result')
+plt.ylabel('Actual Result')
+
+for i in range(conf_matrix.shape[0]):
+    for j in range(conf_matrix.shape[1]):
+        ax.text(j, i, conf_matrix[i, j], va='center', ha='center', color='black', fontsize=12, fontweight='bold')
+
+plt.title('Cancer Confusion Matrix')
+plt.show()
+
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.model_selection import train_test_split
+
+import pandas as pd
+
+
+component_list = [1, 2, 5, 10, 11, 12, 15]
+
+for num_components in component_list:
+    pca = PCA(n_components=num_components)
+    principal_components = pd.DataFrame(pca.fit_transform(x))
+
+    transformed_features = principal_components.values
+
+    features_train, features_test, target_train, target_test = train_test_split(transformed_features, y, train_size=0.8, test_size=0.2, random_state=0)
+
+    model = LogisticRegression(random_state=0)
+    model.fit(features_train, target_train)
+
+    target_pred = model.predict(features_test)
+
+    conf_matrix = confusion_matrix(target_test, target_pred)
+
+    print(num_components, "Principal Components\n", classification_report(target_test, target_pred))
+    print(conf_matrix)
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import load_breast_cancer
+from sklearn.metrics import confusion_matrix
+from sklearn.naive_bayes import GaussianNB
+from sklearn.decomposition import PCA
+from sklearn import metrics
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
+dataset = 'cancer.csv'
+data = pd.read_csv(dataset)
+
+print(data.head())
+
+if 'id' in data.columns:
+    data = data.drop(columns='id')
+
+if 'Unnamed: 32' in data.columns:
+    data = data.drop(columns='Unnamed: 32')
+
+data['diagnosis'] = data['diagnosis'].map({'B': 0, 'M': 1})
+
+features = data.drop(columns='diagnosis')
+target = data['diagnosis']
+
+imputer = SimpleImputer(strategy='mean')
+features = imputer.fit_transform(features)
+
+scaler = StandardScaler()
+features = scaler.fit_transform(features)
+
+component_list = [1, 2, 5, 10, 11, 12, 15]
+
+accuracies = []
+precisions = []
+recalls = []
+f1_scores = []
+
+for num_components in component_list:
+    pca = PCA(n_components=num_components)
+    principal_components = pd.DataFrame(pca.fit_transform(features))
+
+    transformed_features = principal_components.values
+    features_train, features_test, target_train, target_test = train_test_split(transformed_features, target, train_size=0.8, test_size=0.2, random_state=0)
+
+    model = GaussianNB()
+    model.fit(features_train, target_train)
+
+    target_pred = model.predict(features_test)
+
+    accuracy = accuracy_score(target_test, target_pred)
+    precision = precision_score(target_test, target_pred)
+    recall = recall_score(target_test, target_pred)
+    f1 = f1_score(target_test, target_pred)
+
+    accuracies.append(accuracy)
+    precisions.append(precision)
+    recalls.append(recall)
+    f1_scores.append(f1)
+
+    print(num_components, "Principal Components\n", classification_report(target_test, target_pred))
+    print(confusion_matrix(target_test, target_pred))
+
+plt.figure(figsize=(14, 8))
+
+plt.plot(component_list, accuracies, label='Accuracy', marker='o')
+plt.plot(component_list, precisions, label='Precision', marker='o')
+plt.plot(component_list, recalls, label='Recall', marker='o')
+plt.plot(component_list, f1_scores, label='F1 Score', marker='o')
+
+plt.xlabel('Number of Principal Components')
+plt.ylabel('Score')
+plt.title('Evaluation Metrics over Different Numbers of Principal Components')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+optimal_components = component_list[np.argmax(accuracies)]
+print(f'The optimum number of principal components is {optimal_components} with highest accuracy of {max(accuracies):.4f}')
