@@ -1,0 +1,298 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+t_c = np.array([0.5, 14.0, 15.0, 28.0, 11.0, 8.0, 3.0, -4.0, 6.0, 13.0, 21.0])
+t_u = np.array([35.7, 55.9, 58.2, 81.9, 56.3, 48.9, 33.9, 21.8, 48.4, 60.4, 68.4])
+
+t_u_normalized = (t_u - np.mean(t_u)) / np.std(t_u)
+
+train_size = int(0.8 * len(t_u))
+t_u_train = t_u_normalized[:train_size]
+t_c_train = t_c[:train_size]
+t_u_val = t_u_normalized[train_size:]
+t_c_val = t_c[train_size:]
+
+w1_nl = np.random.randn()
+w2_nl = np.random.randn()
+b_nl = np.random.randn()
+
+w_lin = np.random.randn()
+b_lin = np.random.randn()
+
+def model_nonlinear(t_u, w1, w2, b):
+    return w2 * t_u ** 2 + w1 * t_u + b
+
+def model_linear(t_u, w, b):
+    return w * t_u + b
+
+def loss(y_pred, y):
+    return np.mean((y_pred - y) ** 2)
+
+def grad_w1_nl(t_u, t_c, y_pred):
+    return 2 * np.mean((y_pred - t_c) * t_u)
+
+def grad_w2_nl(t_u, t_c, y_pred):
+    return 2 * np.mean((y_pred - t_c) * t_u ** 2)
+
+def grad_b_nl(t_u, t_c, y_pred):
+    return 2 * np.mean(y_pred - t_c)
+
+# Derivatives for linear model
+def grad_w_lin(t_u, t_c, y_pred):
+    return 2 * np.mean((y_pred - t_c) * t_u)
+
+def grad_b_lin(t_u, t_c, y_pred):
+    return 2 * np.mean(y_pred - t_c)
+
+learning_rates = [0.1, 0.01, 0.001, 0.0001]
+num_epochs = 5000
+
+best_loss_nl = float('inf')
+best_params_nl = None
+
+print("Non-linear model training:")
+for lr in learning_rates:
+    w1_nl, w2_nl, b_nl = np.random.randn(), np.random.randn(), np.random.randn()
+    train_losses_nl = []
+    val_losses_nl = []
+    
+    for epoch in range(num_epochs):
+        y_pred_nl_train = model_nonlinear(t_u_train, w1_nl, w2_nl, b_nl)
+        y_pred_nl_val = model_nonlinear(t_u_val, w1_nl, w2_nl, b_nl)
+        
+        train_loss_nl = loss(y_pred_nl_train, t_c_train)
+        val_loss_nl = loss(y_pred_nl_val, t_c_val)
+        
+        train_losses_nl.append(train_loss_nl)
+        val_losses_nl.append(val_loss_nl)
+        
+        if epoch % 500 == 0:
+            print(f"Epoch {epoch}, Learning Rate {lr}, Training Loss {train_loss_nl:.4f}, Validation Loss {val_loss_nl:.4f}")
+        
+        w1_nl -= lr * grad_w1_nl(t_u_train, t_c_train, y_pred_nl_train)
+        w2_nl -= lr * grad_w2_nl(t_u_train, t_c_train, y_pred_nl_train)
+        b_nl -= lr * grad_b_nl(t_u_train, t_c_train, y_pred_nl_train)
+    
+    if val_loss_nl < best_loss_nl:
+        best_loss_nl = val_loss_nl
+        best_params_nl = (w1_nl, w2_nl, b_nl, lr, train_losses_nl, val_losses_nl)
+
+w1_nl, w2_nl, b_nl, lr, train_losses_nl, val_losses_nl = best_params_nl
+
+learning_rate_lin = 0.01
+train_losses_lin = []
+val_losses_lin = []
+
+print("\nLinear model training:")
+for epoch in range(num_epochs):
+    y_pred_lin_train = model_linear(t_u_train, w_lin, b_lin)
+    y_pred_lin_val = model_linear(t_u_val, w_lin, b_lin)
+    
+    train_loss_lin = loss_fn(y_pred_lin_train, t_c_train)
+    val_loss_lin = loss_fn(y_pred_lin_val, t_c_val)
+    
+    train_losses_lin.append(train_loss_lin)
+    val_losses_lin.append(val_loss_lin)
+    
+    if epoch % 500 == 0:
+        print(f"Epoch {epoch}, Training Loss {train_loss_lin:.4f}, Validation Loss {val_loss_lin:.4f}")
+    
+    w_lin -= learning_rate_lin * grad_w_lin(t_u_train, t_c_train, y_pred_lin_train)
+    b_lin -= learning_rate_lin * grad_b_lin(t_u_train, t_c_train, y_pred_lin_train)
+
+t_u_test = np.linspace(min(t_u), max(t_u), 100)
+t_u_test_normalized = (t_u_test - np.mean(t_u)) / np.std(t_u)
+t_c_pred_nl = model_nonlinear(t_u_test_normalized, w1_nl, w2_nl, b_nl)
+t_c_pred_lin = model_linear(t_u_test_normalized, w_lin, b_lin)
+
+plt.scatter(t_u, t_c, label='Data')
+plt.plot(t_u_test, t_c_pred_nl, label='Non-linear Model', color='green')
+plt.plot(t_u_test, t_c_pred_lin, label='Linear Model', color='blue')
+plt.xlabel('Measurement')
+plt.ylabel('Temperature (Celsius)')
+plt.legend()
+plt.show()
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+
+housing_data = pd.read_csv('Housing.csv')
+
+features = ['area', 'bedrooms', 'bathrooms', 'stories', 'parking']
+target = 'price'
+
+X = housing_data[features].values
+y = housing_data[target].values
+
+X_mean = np.mean(X, axis=0)
+X_std = np.std(X, axis=0)
+X_normalized = (X - X_mean) / X_std
+
+num_samples = X.shape[0]
+train_size = int(0.8 * num_samples)
+X_train = X_normalized[:train_size]
+y_train = y[:train_size]
+X_val = X_normalized[train_size:]
+y_val = y[train_size:]
+
+np.random.seed(42)
+weights = np.random.randn(X_train.shape[1])
+bias = np.random.randn()
+
+def linear_model(X, weights, bias):
+    return np.dot(X, weights) + bias
+
+def loss(y_pred, y):
+    return np.mean((y_pred - y) ** 2)
+    
+def compute_gradients(X, y, y_pred):
+    grad_weights = 2 * np.dot(X.T, (y_pred - y)) / len(y)
+    grad_bias = 2 * np.mean(y_pred - y)
+    return grad_weights, grad_bias
+
+learning_rates = [0.1, 0.01, 0.001, 0.0001]
+num_epochs = 5000
+
+best_loss = float('inf')
+best_params = None
+
+all_train_losses = {}
+all_val_losses = {}
+
+print("Linear model training:")
+for lr in learning_rates:
+    lr_str = str(lr)
+    weights = np.random.randn(X_train.shape[1])
+    bias = np.random.randn()
+    train_losses = []
+    val_losses = []
+    
+    for epoch in range(num_epochs):
+        y_pred_train = model(X_train, weights, bias)
+        y_pred_val = model(X_val, weights, bias)
+        
+        train_loss = loss_fn(y_pred_train, y_train)
+        val_loss = loss_fn(y_pred_val, y_val)
+        
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+        
+        if epoch % 500 == 0:
+            print(f"Epoch {epoch}, Learning Rate {lr}, Training Loss {train_loss:.4f}, Validation Loss {val_loss:.4f}")
+        
+        grad_weights, grad_bias = compute_gradients(X_train, y_train, y_pred_train)
+        
+        weights -= lr * grad_weights
+        bias -= lr * grad_bias
+    
+    if val_loss < best_loss:
+        best_loss = val_loss
+        best_params = (weights, bias, lr, train_losses, val_losses)
+
+weights, bias, lr, train_losses, val_losses = best_params
+
+print("\nBest Linear Model Training Losses (every 500 epochs):")
+for i in range(0, num_epochs, 500):
+    print(f"Epoch {i}, Training Loss {train_losses[i]:.4f}, Validation Loss {val_losses[i]:.4f}")
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+
+housing_data = pd.read_csv('Housing.csv')
+
+features = housing_data.columns.drop('price')
+target = 'price'
+
+X = pd.get_dummies(housing_data[features], drop_first=True).values
+y = housing_data[target].values
+
+# Normalize the input features using StandardScaler
+scaler = StandardScaler()
+X_normalized = scaler.fit_transform(X)
+
+num_samples = X.shape[0]
+train_size = int(0.8 * num_samples)
+X_train = X_normalized[:train_size]
+y_train = y[:train_size]
+X_val = X_normalized[train_size:]
+y_val = y[train_size:]
+
+np.random.seed(42)
+weights = np.random.randn(X_train.shape[1])
+bias = np.random.randn()
+
+
+def linear_model(X, weights, bias):
+    return np.dot(X, weights) + bias
+
+def loss_fn(y_pred, y):
+    return np.mean((y_pred - y) ** 2)
+
+def grad(X, y, y_pred):
+    grad_weights = 2 * np.dot(X.T, (y_pred - y)) / len(y)
+    grad_bias = 2 * np.mean(y_pred - y)
+    return grad_weights, grad_bias
+
+learning_rates = [0.1, 0.01, 0.001, 0.0001]
+num_epochs = 5000
+
+best_loss = float('inf')
+best_params = None
+
+all_train_losses = {}
+all_val_losses = {}
+
+print("Linear model training:")
+for lr in learning_rates:
+    lr_str = str(lr)  # Convert learning rate to string for dictionary keys
+    weights = np.random.randn(X_train.shape[1])
+    bias = np.random.randn()
+    train_losses = []
+    val_losses = []
+    
+    for epoch in range(num_epochs):
+        y_pred_train = model(X_train, weights, bias)
+        y_pred_val = model(X_val, weights, bias)
+        
+        train_loss = loss_fn(y_pred_train, y_train)
+        val_loss = loss_fn(y_pred_val, y_val)
+        
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+        
+        if epoch % 500 == 0:
+            print(f"Learning Rate {lr}, Epoch {epoch}, Training Loss {train_loss:.4f}, Validation Loss {val_loss:.4f}")
+        
+        grad_weights, grad_bias = compute_gradients(X_train, y_train, y_pred_train)
+        
+        weights -= lr * grad_weights
+        bias -= lr * grad_bias
+    
+    all_train_losses[lr_str] = train_losses
+    all_val_losses[lr_str] = val_losses
+    
+    if val_loss < best_loss:
+        best_loss = val_loss
+        best_params = (weights, bias, lr, train_losses, val_losses)
+
+weights, bias, lr, train_losses, val_losses = best_params
+
+print("\nBest Linear Model Training Losses (every 500 epochs):")
+for i in range(0, num_epochs, 500):
+    print(f"Epoch {i}, Training Loss {train_losses[i]:.4f}, Validation Loss {val_losses[i]:.4f}")
+
+plt.figure(figsize=(12, 8))
+for lr in learning_rates:
+    lr_str = str(lr)  
+    plt.plot(range(0, num_epochs, 500), all_train_losses[lr_str][::500], label=f'Train Loss (lr={lr})')
+    plt.plot(range(0, num_epochs, 500), all_val_losses[lr_str][::500], label=f'Val Loss (lr={lr})', linestyle='--')
+
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.title('Training and Validation Losses')
+plt.show()
