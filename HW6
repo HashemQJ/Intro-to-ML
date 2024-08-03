@@ -1,0 +1,212 @@
+import pandas as pd
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+
+# Load the dataset
+url = "Housing.csv"
+housing_data = pd.read_csv(url)
+
+# Function to convert categorical variables to binary
+def map_binary_columns(df, columns):
+    for col in columns:
+        df[col] = df[col].map({'no': 0, 'yes': 1})
+    return df
+
+# Preprocess the data
+binary_columns = ['mainroad', 'guestroom', 'basement', 'hotwaterheating', 'airconditioning', 'prefarea']
+housing_data = map_binary_columns(housing_data, binary_columns)
+housing_data = housing_data.drop('furnishingstatus', axis=1)
+
+# Separate features and target
+y = housing_data.pop('price').values.reshape(-1, 1)
+X = housing_data.values
+
+# Normalize the data
+scaler_x = StandardScaler()
+scaler_y = StandardScaler()
+X_normalized = scaler_x.fit_transform(X)
+y_normalized = scaler_y.fit_transform(y)
+
+# Convert to PyTorch tensors
+X_tensor = torch.tensor(X_normalized, dtype=torch.float32)
+y_tensor = torch.tensor(y_normalized, dtype=torch.float32)
+
+# Split the data
+X_train, X_valid, y_train, y_valid = train_test_split(X_tensor, y_tensor, test_size=0.8, random_state=42)
+
+# Define the training loop
+def train_model(model, optimizer, loss_fn, X_train, X_valid, y_train, y_valid, epochs):
+    train_losses = []
+    valid_losses = []
+    for epoch in range(1, epochs + 1):
+        model.train()
+        predictions_train = model(X_train)
+        train_loss = loss_fn(predictions_train, y_train)
+
+        model.eval()
+        with torch.no_grad():
+            predictions_valid = model(X_valid)
+            valid_loss = loss_fn(predictions_valid, y_valid)
+
+        optimizer.zero_grad()
+        train_loss.backward()
+        optimizer.step()
+
+        train_losses.append(train_loss.item())
+        valid_losses.append(valid_loss.item())
+
+        if epoch % 1000 == 0:
+            print(f"Epoch {epoch}. Training loss {train_loss.item()}, Validation loss {valid_loss.item()}")
+
+    return train_losses, valid_losses
+
+# Define and train the simple model
+simple_model = nn.Sequential(
+    nn.Linear(X_train.shape[1], 32),
+    nn.Tanh(),
+    nn.Linear(32, 1)
+)
+
+optimizer_simple = optim.SGD(simple_model.parameters(), lr=1e-3)
+train_losses_simple, valid_losses_simple = train_model(simple_model, optimizer_simple, nn.MSELoss(), X_train, X_valid, y_train, y_valid, epochs=5000)
+
+# Define and train the complex model
+complex_model = nn.Sequential(
+    nn.Linear(X_train.shape[1], 32),
+    nn.Tanh(),
+    nn.Linear(32, 64),
+    nn.Tanh(),
+    nn.Linear(64, 16),
+    nn.Tanh(),
+    nn.Linear(16, 1)
+)
+
+optimizer_complex = optim.SGD(complex_model.parameters(), lr=1e-3)
+train_losses_complex, valid_losses_complex = train_model(complex_model, optimizer_complex, nn.MSELoss(), X_train, X_valid, y_train, y_valid, epochs=5000)
+
+# Plot the losses for both models
+plt.figure(figsize=(14, 7))
+
+# Plot loss for simple model
+plt.subplot(1, 2, 1)
+plt.plot(train_losses_simple, label='Training Loss')
+plt.plot(valid_losses_simple, label='Validation Loss')
+plt.title('Loss Over Epochs (1 Hidden Layer)')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+# Plot loss for complex model
+plt.subplot(1, 2, 2)
+plt.plot(train_losses_complex, label='Training Loss')
+plt.plot(valid_losses_complex, label='Validation Loss')
+plt.title('Loss Over Epochs (3 Hidden Layers)')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+import torch
+from torch import nn, optim
+from torch.utils.data import DataLoader, Subset
+from torchvision import datasets, transforms
+import time
+
+data_path = '../data-unversions/p1ch7/'
+batch_size = 64
+learning_rate = 1e-3
+epochs = 300
+milestones = [0, 50, 100, 150, 200, 250, 300]
+
+transform = transforms.ToTensor()
+
+train_dataset = datasets.CIFAR10(root=data_path, train=True, download=True, transform=transform)
+test_dataset = datasets.CIFAR10(root=data_path, train=False, download=True, transform=transform)
+
+train_subset = Subset(train_dataset, range(0, 1000))  
+test_subset = Subset(test_dataset, range(0, 200))    
+
+train_loader = DataLoader(train_subset, batch_size=len(train_subset), shuffle=False)
+data = next(iter(train_loader))[0]
+mean = data.mean(dim=[0, 2, 3])
+std = data.std(dim=[0, 2, 3])
+
+normalize = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean, std)
+])
+
+train_dataset = datasets.CIFAR10(root=data_path, train=True, download=True, transform=normalize)
+test_dataset = datasets.CIFAR10(root=data_path, train=False, download=True, transform=normalize)
+train_subset = Subset(train_dataset, range(0, 1000))  
+test_subset = Subset(test_dataset, range(0, 200))     
+
+train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(test_subset, batch_size=batch_size, shuffle=False)
+
+def train_and_evaluate(model, train_loader, test_loader, epochs, optimizer, loss_fn):
+    start_time = time.time()
+
+    for epoch in range(epochs + 1):
+        model.train()
+        running_loss = 0.0
+        for images, labels in train_loader:
+            images = images.view(images.size(0), -1)
+            optimizer.zero_grad()
+            outputs = model(images)
+            loss = loss_fn(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+
+        if epoch in milestones:
+            avg_loss = running_loss / len(train_loader)
+            print(f"Epoch [{epoch}/{epochs}], Loss: {avg_loss:.4f}")
+            evaluate(model, test_loader)
+
+    train_duration = time.time() - start_time
+    print(f"Total Training Time: {train_duration:.2f} seconds")
+
+def evaluate(model, test_loader):
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images = images.view(images.size(0), -1)
+            outputs = model(images)
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    accuracy = 100 * correct / total
+    print(f"Validation Accuracy: {accuracy:.2f}%")
+
+models = [
+    nn.Sequential(
+        nn.Linear(3 * 32 * 32, 512),
+        nn.ReLU(),
+        nn.Linear(512, 10)
+    ),
+    nn.Sequential(
+        nn.Linear(3 * 32 * 32, 512),
+        nn.ReLU(),
+        nn.Linear(512, 1024),
+        nn.ReLU(),
+        nn.Linear(1024, 256),
+        nn.ReLU(),
+        nn.Linear(256, 10)
+    )
+]
+
+for model in models:
+    print(f"\nTraining model: {model}")
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+    train_and_evaluate(model, train_loader, test_loader, epochs, optimizer, nn.CrossEntropyLoss())
+
